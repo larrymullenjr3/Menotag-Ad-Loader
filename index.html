@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monetag Ad Loader</title>
   <meta name="theme-color" content="#080808">
+  <meta name="monetag" content="68f716cb1672ff976eb009f4b213f910">
+
+  <title>Monetag Ad Loader</title>
 
   <style>
     * {
@@ -110,6 +112,7 @@
 
     #loaderStatus {
       display: none;
+      padding: 24px;
       color: #aaa;
       text-align: center;
     }
@@ -125,7 +128,6 @@
 
     body.loader-mode #loaderStatus {
       display: block;
-      padding: 24px;
     }
   </style>
 </head>
@@ -153,9 +155,9 @@
       <div class="step">
         <span class="number">2</span>
         <strong>Add the zone ID to the website URL</strong>
-        <p>Place your numeric zone ID after the website's main address.</p>
+        <p>Place your numeric zone ID after the main website address.</p>
 
-        <code>https://your-domain.vercel.app/12100563</code>
+        <code>https://monetag-ad-loader.vercel.app/3424903</code>
       </div>
 
       <div class="step">
@@ -178,9 +180,7 @@
       </div>
     </section>
 
-    <footer>
-      Monetag Ad Loader
-    </footer>
+    <footer>Monetag Ad Loader</footer>
   </main>
 
   <div id="loaderStatus">Loading advertisement...</div>
@@ -191,18 +191,15 @@
         .split("/")
         .filter(Boolean);
 
-      // The root URL displays the instructions above.
-      if (parts.length === 0) {
-        return;
-      }
+      // Display instructions on the homepage.
+      if (parts.length === 0) return;
 
-      // Accept exactly one numeric zone ID in the URL.
+      // Accept one numeric zone ID.
       if (parts.length !== 1 || !/^\d+$/.test(parts[0])) {
         document.querySelector(".container").style.display = "block";
         document.querySelector("#loaderStatus").style.display = "none";
         document.querySelector("#loaderStatus").textContent =
-          "Invalid zone ID. Use the main URL followed by a numeric zone ID.";
-        document.querySelector("#loaderStatus").style.color = "#ff7777";
+          "Invalid zone ID. Please use a numeric zone ID.";
         return;
       }
 
@@ -210,7 +207,6 @@
 
       document.body.classList.add("loader-mode");
 
-      // Load the Monetag script for this zone.
       const script = document.createElement("script");
       script.dataset.zone = zoneId;
       script.src = "https://n6wxm.com/vignette.min.js";
@@ -223,32 +219,28 @@
 
       document.head.appendChild(script);
 
-      // Notify the Telegram bot when the user returns to the Mini App.
-      // This event alone does not verify that an ad was fully viewed.
+      // Telegram return event; not proof of a completed ad view.
       let sent = false;
 
       document.addEventListener("visibilitychange", () => {
         if (
           document.visibilityState === "visible" &&
           document.hasFocus() &&
-          !sent
+          !sent &&
+          window.Telegram &&
+          window.Telegram.WebApp &&
+          typeof window.Telegram.WebApp.sendData === "function"
         ) {
-          if (
-            window.Telegram &&
-            window.Telegram.WebApp &&
-            typeof window.Telegram.WebApp.sendData === "function"
-          ) {
-            sent = true;
+          sent = true;
 
-            window.Telegram.WebApp.sendData(JSON.stringify({
-              event: "monetag_ad_returned",
-              zone_id: zoneId,
-              timestamp: Date.now()
-            }));
-          }
+          window.Telegram.WebApp.sendData(JSON.stringify({
+            event: "monetag_ad_returned",
+            zone_id: zoneId,
+            timestamp: Date.now()
+          }));
         }
       });
     })();
   </script>
 </body>
-  </html>
+        </html>
