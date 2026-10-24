@@ -141,8 +141,7 @@
     <h1>Monetag <span>Ad Loader</span></h1>
 
     <p class="intro">
-      A simple service for loading Monetag advertisements using a zone ID
-      directly in the website URL.
+      Load Monetag advertisements using a zone ID directly in your website URL.
     </p>
 
     <section class="card">
@@ -151,7 +150,7 @@
       <div class="step">
         <span class="number">1</span>
         <strong>Get your Monetag zone ID</strong>
-        <p>Find your advertisement's zone ID in your Monetag account.</p>
+        <p>Find the advertisement zone ID in your Monetag account.</p>
       </div>
 
       <div class="step">
@@ -159,15 +158,14 @@
         <strong>Add the zone ID to the website URL</strong>
         <p>Append your numeric zone ID to the website address.</p>
 
-        <code>https://monetag-ad-loader.vercel.app/3424903</code>
+        <code>https://monetag-ad-loader.vercel.app/12116377</code>
       </div>
 
       <div class="step">
         <span class="number">3</span>
         <strong>Open the generated URL</strong>
         <p>
-          Open the complete URL in your browser or a compatible
-          Telegram Mini App.
+          Open the complete URL in your browser or a compatible Telegram Mini App.
         </p>
       </div>
     </section>
@@ -176,9 +174,10 @@
       <h2>About the Loader</h2>
 
       <div class="notice">
-        This service provides a simple way to load Monetag advertisements
-        using a zone ID in the URL. Append your zone ID to the website
-        address to access the corresponding ad loader.
+        This service loads the Monetag SDK using the zone ID supplied in the URL.
+        You can use different zone IDs without changing this website's code.
+        Actual ad delivery depends on SDK behavior, zone configuration,
+        browser settings and available ad inventory.
       </div>
     </section>
 
@@ -192,32 +191,38 @@
   <script>
     (() => {
       const status = document.getElementById("loaderStatus");
+
       const parts = window.location.pathname
         .split("/")
         .filter(Boolean);
 
-      // Homepage: show the instructions.
+      // Homepage: show instructions only.
       if (parts.length === 0) {
         return;
       }
 
-      // Require one numeric zone ID.
+      // Require exactly one numeric zone ID.
       if (parts.length !== 1 || !/^\d+$/.test(parts[0])) {
+        document.body.classList.add("loader-mode");
+
         status.textContent =
           "Invalid zone ID. Please use a numeric zone ID.";
+
         status.style.color = "#ff7777";
-        status.style.display = "block";
         return;
       }
 
+      // Use the zone ID supplied in the URL.
       const zoneId = parts[0];
 
       document.body.classList.add("loader-mode");
 
-      // Load Monetag's advertisement script.
+      // Load the new SDK dynamically for the requested zone.
       const script = document.createElement("script");
+
+      script.src = "https://libtl.com/sdk.js";
       script.dataset.zone = zoneId;
-      script.src = "https://n6wxm.com/vignette.min.js";
+      script.dataset.sdk = "show_" + zoneId;
       script.async = true;
 
       let scriptLoaded = false;
@@ -226,28 +231,30 @@
         scriptLoaded = true;
 
         status.textContent =
-          "✅ Monetag script loaded. Waiting for an advertisement...";
+          "SDK loaded. Waiting for an advertisement...";
       };
 
       script.onerror = () => {
         status.textContent =
-          "❌ Failed to load the Monetag script. Please try again later.";
+          "Failed to load the advertisement SDK. Please try again later.";
+
         status.style.color = "#ff7777";
       };
 
       document.head.appendChild(script);
 
-      // Prevent an endless loading message if the script never responds.
+      // Show a warning if the SDK does not load within 15 seconds.
       setTimeout(() => {
         if (!scriptLoaded) {
           status.textContent =
-            "⚠️ The advertisement script is taking too long to respond. Check your connection and try again.";
+            "The advertisement SDK is taking too long to respond. Check your connection and try again.";
+
           status.style.color = "#ffcc66";
         }
       }, 15000);
 
-      // Send a return event to Telegram when supported.
-      // This event does not verify a completed ad view.
+      // Notify Telegram when the user returns, if supported.
+      // This does not verify that an ad was completed.
       let sent = false;
 
       function notifyTelegramOnReturn() {
@@ -284,4 +291,4 @@
     })();
   </script>
 </body>
-  </html>
+      </html>
