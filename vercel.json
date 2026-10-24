@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/:zoneId",
+      "destination": "/index.html"
+    }
+  ]
+}
