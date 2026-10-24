@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monetag Ad Loader</title>
+  <meta name="theme-color" content="#080808">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background: #080808;
+      color: #f5f5f5;
+      font-family: Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 40px auto;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border: 1px solid #333;
+      border-radius: 20px;
+      color: #aaa;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    h1 {
+      margin: 20px 0 10px;
+      font-size: clamp(30px, 6vw, 44px);
+      line-height: 1.2;
+    }
+
+    h1 span {
+      color: #42e695;
+    }
+
+    .intro {
+      color: #aaa;
+      font-size: 16px;
+    }
+
+    .card {
+      margin-top: 24px;
+      padding: 22px;
+      border: 1px solid #292929;
+      border-radius: 16px;
+      background: #111;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    .step {
+      margin: 18px 0;
+    }
+
+    .number {
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      margin-right: 8px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #42e695;
+      color: #080808;
+      font-weight: bold;
+    }
+
+    code {
+      display: block;
+      overflow-wrap: anywhere;
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px solid #292929;
+      border-radius: 10px;
+      background: #080808;
+      color: #42e695;
+      font-size: 14px;
+    }
+
+    .notice {
+      padding: 14px;
+      border-left: 3px solid #42e695;
+      border-radius: 6px;
+      background: #191919;
+      color: #bbb;
+    }
+
+    footer {
+      margin-top: 30px;
+      color: #666;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    #loaderStatus {
+      display: none;
+      color: #aaa;
+      text-align: center;
+    }
+
+    body.loader-mode {
+      padding: 0;
+      background: #000;
+    }
+
+    body.loader-mode .container {
+      display: none;
+    }
+
+    body.loader-mode #loaderStatus {
+      display: block;
+      padding: 24px;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <span class="badge">MONETAG TOOL</span>
+
+    <h1>Monetag <span>Ad Loader</span></h1>
+
+    <p class="intro">
+      A simple service for loading Monetag advertisements using a zone ID
+      directly in the website URL.
+    </p>
+
+    <section class="card">
+      <h2>How to Use</h2>
+
+      <div class="step">
+        <span class="number">1</span>
+        <strong>Get your Monetag zone ID</strong>
+        <p>Find the zone ID for your advertisement in your Monetag account.</p>
+      </div>
+
+      <div class="step">
+        <span class="number">2</span>
+        <strong>Add the zone ID to the website URL</strong>
+        <p>Place your numeric zone ID after the website's main address.</p>
+
+        <code>https://your-domain.vercel.app/12100563</code>
+      </div>
+
+      <div class="step">
+        <span class="number">3</span>
+        <strong>Open the generated URL</strong>
+        <p>
+          Use the complete URL wherever you need to open the corresponding
+          ad loader, including from a compatible Telegram Mini App.
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>About the Loader</h2>
+
+      <div class="notice">
+        This service provides a simple way to load Monetag advertisements
+        using a zone ID in the URL. Append your zone ID to the website
+        address to access the corresponding ad loader.
+      </div>
+    </section>
+
+    <footer>
+      Monetag Ad Loader
+    </footer>
+  </main>
+
+  <div id="loaderStatus">Loading advertisement...</div>
+
+  <script>
+    (() => {
+      const parts = window.location.pathname
+        .split("/")
+        .filter(Boolean);
+
+      // The root URL displays the instructions above.
+      if (parts.length === 0) {
+        return;
+      }
+
+      // Accept exactly one numeric zone ID in the URL.
+      if (parts.length !== 1 || !/^\d+$/.test(parts[0])) {
+        document.querySelector(".container").style.display = "block";
+        document.querySelector("#loaderStatus").style.display = "none";
+        document.querySelector("#loaderStatus").textContent =
+          "Invalid zone ID. Use the main URL followed by a numeric zone ID.";
+        document.querySelector("#loaderStatus").style.color = "#ff7777";
+        return;
+      }
+
+      const zoneId = parts[0];
+
+      document.body.classList.add("loader-mode");
+
+      // Load the Monetag script for this zone.
+      const script = document.createElement("script");
+      script.dataset.zone = zoneId;
+      script.src = "https://n6wxm.com/vignette.min.js";
+      script.async = true;
+
+      script.onerror = () => {
+        document.querySelector("#loaderStatus").textContent =
+          "The advertisement could not be loaded. Please try again later.";
+      };
+
+      document.head.appendChild(script);
+
+      // Notify the Telegram bot when the user returns to the Mini App.
+      // This event alone does not verify that an ad was fully viewed.
+      let sent = false;
+
+      document.addEventListener("visibilitychange", () => {
+        if (
+          document.visibilityState === "visible" &&
+          document.hasFocus() &&
+          !sent
+        ) {
+          if (
+            window.Telegram &&
+            window.Telegram.WebApp &&
+            typeof window.Telegram.WebApp.sendData === "function"
+          ) {
+            sent = true;
+
+            window.Telegram.WebApp.sendData(JSON.stringify({
+              event: "monetag_ad_returned",
+              zone_id: zoneId,
+              timestamp: Date.now()
+            }));
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+  </html>
