@@ -114,13 +114,28 @@
 
     #loaderStatus {
       display: none;
+      max-width: 560px;
+      margin: 20vh auto 0;
       padding: 24px;
       color: #aaa;
       text-align: center;
     }
 
+    #retryButton {
+      display: none;
+      margin: 18px auto;
+      padding: 12px 22px;
+      border: 0;
+      border-radius: 10px;
+      background: #42e695;
+      color: #080808;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
     body.loader-mode {
-      padding: 0;
+      padding: 0 20px;
       background: #000;
     }
 
@@ -128,20 +143,23 @@
       display: none;
     }
 
-    body.loader-mode #loaderStatus {
+    body.loader-mode #loaderStatus,
+    body.loader-mode #retryButton {
       display: block;
     }
   </style>
 </head>
 
 <body>
+
   <main class="container">
     <span class="badge">MONETAG TOOL</span>
 
     <h1>Monetag <span>Ad Loader</span></h1>
 
     <p class="intro">
-      Load Monetag advertisements using a zone ID directly in your website URL.
+      Load rewarded-interstitial advertisements using a zone ID
+      directly in the website URL.
     </p>
 
     <section class="card">
@@ -150,7 +168,7 @@
       <div class="step">
         <span class="number">1</span>
         <strong>Get your Monetag zone ID</strong>
-        <p>Find the advertisement zone ID in your Monetag account.</p>
+        <p>Find the zone ID in your Monetag account.</p>
       </div>
 
       <div class="step">
@@ -165,7 +183,8 @@
         <span class="number">3</span>
         <strong>Open the generated URL</strong>
         <p>
-          Open the complete URL in your browser or a compatible Telegram Mini App.
+          The page loads the SDK for that zone and requests
+          a rewarded-interstitial advertisement.
         </p>
       </div>
     </section>
@@ -174,10 +193,10 @@
       <h2>About the Loader</h2>
 
       <div class="notice">
-        This service loads the Monetag SDK using the zone ID supplied in the URL.
-        You can use different zone IDs without changing this website's code.
-        Actual ad delivery depends on SDK behavior, zone configuration,
-        browser settings and available ad inventory.
+        The loader uses the zone ID supplied in the URL.
+        You can use other numeric zone IDs without changing
+        this website's code. Ad availability depends on the
+        SDK, zone configuration, browser and available inventory.
       </div>
     </section>
 
@@ -185,18 +204,23 @@
   </main>
 
   <div id="loaderStatus" role="status" aria-live="polite">
-    Loading advertisement...
+    Preparing advertisement...
   </div>
+
+  <button id="retryButton" type="button">
+    Try Again
+  </button>
 
   <script>
     (() => {
       const status = document.getElementById("loaderStatus");
+      const retryButton = document.getElementById("retryButton");
 
       const parts = window.location.pathname
         .split("/")
         .filter(Boolean);
 
-      // Homepage: show instructions only.
+      // Keep the homepage as an instruction page.
       if (parts.length === 0) {
         return;
       }
@@ -206,89 +230,170 @@
         document.body.classList.add("loader-mode");
 
         status.textContent =
-          "Invalid zone ID. Please use a numeric zone ID.";
+          "Invalid zone ID. Please use one numeric zone ID.";
 
         status.style.color = "#ff7777";
         return;
       }
 
-      // Use the zone ID supplied in the URL.
       const zoneId = parts[0];
+      const sdkFunctionName = "show_" + zoneId;
 
       document.body.classList.add("loader-mode");
 
-      // Load the new SDK dynamically for the requested zone.
+      let sdkReady = false;
+      let adRequestInProgress = false;
+      let sdkLoadFailed = false;
+
+      function showStatus(message, color = "#aaa") {
+        status.textContent = message;
+        status.style.color = color;
+      }
+
+      function requestAd() {
+        if (adRequestInProgress) {
+          return;
+        }
+
+        if (typeof window[sdkFunctionName] !== "function") {
+          showStatus(
+            sdkLoadFailed
+              ? "The ad SDK could not load. Check your connection and try again."
+              : "The ad function is not available yet. Please wait or try again.",
+            "#ffcc66"
+          );
+
+          retryButton.style.display = "block";
+          return;
+        }
+
+        adRequestInProgress = true;
+        retryButton.style.display = "none";
+
+        showStatus("Requesting advertisement...");
+
+        try {
+          const adResult = window[sdkFunctionName]();
+
+          if (!adResult || typeof adResult.then !== "function") {
+            adRequestInProgress = false;
+
+            showStatus(
+              "The SDK returned an unexpected response. Please try again.",
+              "#ffcc66"
+            );
+
+            retryButton.style.display = "block";
+            return;
+          }
+
+          adResult
+            .then(() => {
+              showStatus(
+                "The advertisement flow has finished. You can return to Telegram."
+              );
+
+              // This callback follows the supplied SDK example.
+              // Confirm the provider's documentation before using
+              // promise resolution as proof of a completed ad view.
+            })
+            .catch((error) => {
+              console.error("Advertisement request failed:", error);
+
+              showStatus(
+                "The advertisement could not be completed. You can try again.",
+                "#ffcc66"
+              );
+
+              retryButton.style.display = "block";
+            })
+            .finally(() => {
+              adRequestInProgress = false;
+            });
+
+        } catch (error) {
+          console.error("Advertisement error:", error);
+
+          adRequestInProgress = false;
+
+          showStatus(
+            "An error occurred while requesting the advertisement.",
+            "#ff7777"
+          );
+
+          retryButton.style.display = "block";
+        }
+      }
+
+      // Load the SDK dynamically for the requested zone.
       const script = document.createElement("script");
 
       script.src = "https://libtl.com/sdk.js";
       script.dataset.zone = zoneId;
-      script.dataset.sdk = "show_" + zoneId;
+      script.dataset.sdk = sdkFunctionName;
       script.async = true;
 
-      let scriptLoaded = false;
-
       script.onload = () => {
-        scriptLoaded = true;
+        sdkReady = true;
 
-        status.textContent =
-          "SDK loaded. Waiting for an advertisement...";
+        // Some SDKs define their function after the script's
+        // load event, so check briefly before giving up.
+        let attempts = 0;
+        const maxAttempts = 40;
+
+        const checkFunction = setInterval(() => {
+          attempts++;
+
+          if (typeof window[sdkFunctionName] === "function") {
+            clearInterval(checkFunction);
+            requestAd();
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkFunction);
+
+            showStatus(
+              "The SDK loaded, but its ad function was not found. Verify the zone ID and SDK setup.",
+              "#ffcc66"
+            );
+
+            retryButton.style.display = "block";
+          }
+        }, 250);
       };
 
       script.onerror = () => {
-        status.textContent =
-          "Failed to load the advertisement SDK. Please try again later.";
+        sdkLoadFailed = true;
 
-        status.style.color = "#ff7777";
+        showStatus(
+          "Failed to load the advertisement SDK. Check your connection.",
+          "#ff7777"
+        );
+
+        retryButton.style.display = "block";
       };
 
       document.head.appendChild(script);
 
-      // Show a warning if the SDK does not load within 15 seconds.
-      setTimeout(() => {
-        if (!scriptLoaded) {
-          status.textContent =
-            "The advertisement SDK is taking too long to respond. Check your connection and try again.";
+      retryButton.addEventListener("click", () => {
+        if (sdkReady) {
+          requestAd();
+        } else {
+          showStatus("The SDK is still loading. Please wait...");
+        }
+      });
 
-          status.style.color = "#ffcc66";
+      // Safety timeout for loading feedback.
+      setTimeout(() => {
+        if (!sdkReady && !sdkLoadFailed) {
+          showStatus(
+            "The advertisement SDK is taking longer than expected to load.",
+            "#ffcc66"
+          );
+
+          retryButton.style.display = "block";
         }
       }, 15000);
-
-      // Notify Telegram when the user returns, if supported.
-      // This does not verify that an ad was completed.
-      let sent = false;
-
-      function notifyTelegramOnReturn() {
-        if (
-          sent ||
-          document.visibilityState !== "visible" ||
-          !document.hasFocus()
-        ) {
-          return;
-        }
-
-        const webApp = window.Telegram?.WebApp;
-
-        if (webApp && typeof webApp.sendData === "function") {
-          sent = true;
-
-          webApp.sendData(JSON.stringify({
-            event: "monetag_ad_returned",
-            zone_id: zoneId,
-            timestamp: Date.now()
-          }));
-        }
-      }
-
-      document.addEventListener(
-        "visibilitychange",
-        notifyTelegramOnReturn
-      );
-
-      window.addEventListener(
-        "focus",
-        notifyTelegramOnReturn
-      );
     })();
   </script>
+
 </body>
-      </html>
+  </html>
