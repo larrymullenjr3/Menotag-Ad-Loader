@@ -3,11 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <meta
-    name="monetag"
-    content="68f716cb1672ff976eb009f4b213f910"
-  >
+  <meta name="monetag" content="68f716cb1672ff976eb009f4b213f910">
 
   <title>Monetag Ad Loader</title>
 
@@ -28,7 +24,7 @@
       background:
         radial-gradient(circle at top, #202044 0%, transparent 45%),
         #080811;
-      color: #ffffff;
+      color: #fff;
       font-family: Arial, Helvetica, sans-serif;
     }
 
@@ -77,29 +73,22 @@
       background: #101020;
       border: 1px solid #343454;
       border-radius: 12px;
-      color: #ffffff;
       font-size: 14px;
       line-height: 1.6;
       overflow-wrap: anywhere;
     }
 
     .button {
-      display: inline-block;
       width: 100%;
       margin-top: 14px;
       padding: 15px 18px;
       border: 0;
       border-radius: 12px;
       background: linear-gradient(135deg, #7367ff, #4c42d8);
-      color: #ffffff;
+      color: #fff;
       font-size: 15px;
       font-weight: bold;
       cursor: pointer;
-    }
-
-    .button:disabled {
-      opacity: 0.6;
-      cursor: wait;
     }
 
     #retryButton {
@@ -131,39 +120,22 @@
 <body>
   <main class="container">
     <div class="icon">📺</div>
-
     <h1>Monetag Ad Loader</h1>
 
     <section id="homePage">
-      <p>
-        Load a Monetag advertisement using your zone ID.
-        Each numeric zone ID has its own address.
-      </p>
+      <p>Load a Monetag advertisement using its zone ID.</p>
 
-      <div class="example">
-        Example: /12116377
-      </div>
+      <div class="example">Example: /12116377</div>
 
       <p>
-        Add your zone ID after the website address to start
-        the corresponding advertisement.
-      </p>
-
-      <p>
-        The homepage displays these instructions only.
-        It does not automatically open an advertisement.
+        Add a numeric zone ID to the end of the website URL.
+        The homepage itself does not launch advertisements.
       </p>
     </section>
 
     <section id="adPage" hidden>
       <p id="zoneText"></p>
-
-      <div
-        id="status"
-        class="status"
-        role="status"
-        aria-live="polite"
-      ></div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
 
       <button id="retryButton" class="button" type="button">
         Try Advertisement Again
@@ -174,11 +146,8 @@
       <div>Monetag Ad Loader</div>
       <div>
         By
-        <a
-          href="https://t.me/pakcybertechnumber"
-          target="_blank"
-          rel="noopener noreferrer"
-        >@PAK CYBER</a>
+        <a href="https://t.me/pakcybertechnumber"
+           target="_blank" rel="noopener noreferrer">@PAK CYBER</a>
       </div>
     </footer>
   </main>
@@ -195,150 +164,125 @@
       const statusBox = document.getElementById("status");
       const retryButton = document.getElementById("retryButton");
 
-      const match = window.location.pathname.match(/^\/(\d+)\/?$/);
+      const match = location.pathname.match(/^\/(\d+)\/?$/);
 
-      // Homepage: show instructions only.
-      if (!match) {
-        return;
-      }
+      // Homepage: instructions only.
+      if (!match) return;
 
       const zoneId = match[1];
       const sdkName = "show_" + zoneId;
 
       homePage.hidden = true;
       adPage.hidden = false;
+      zoneText.textContent = "Loading advertisement for zone " + zoneId;
 
-      zoneText.textContent =
-        "Loading advertisement for zone " + zoneId + "...";
+      let busy = false;
+      let sdkPromise;
 
-      let adRequestInProgress = false;
-      let sdkLoadPromise = null;
-
-      function showStatus(message, color) {
+      function showStatus(message, color = "#ffffff") {
         statusBox.style.display = "block";
+        statusBox.style.color = color;
         statusBox.textContent = message;
-        statusBox.style.color = color || "#ffffff";
       }
 
-      function loadMonetagSDK() {
-        if (sdkLoadPromise) {
-          return sdkLoadPromise;
+      function loadSDK() {
+        if (typeof window[sdkName] === "function") {
+          return Promise.resolve();
         }
 
-        sdkLoadPromise = new Promise((resolve, reject) => {
-          if (typeof window[sdkName] === "function") {
-            resolve();
-            return;
-          }
+        if (sdkPromise) return sdkPromise;
 
+        sdkPromise = new Promise((resolve, reject) => {
           const script = document.createElement("script");
-
           script.src = "https://libtl.com/sdk.js";
           script.dataset.zone = zoneId;
           script.dataset.sdk = sdkName;
           script.async = true;
 
-          let settled = false;
-
           const timeout = setTimeout(() => {
-            if (settled) return;
-            settled = true;
             reject(new Error("Monetag SDK loading timed out."));
           }, 20000);
 
           script.onload = () => {
-            if (settled) return;
-
-            settled = true;
             clearTimeout(timeout);
 
             if (typeof window[sdkName] === "function") {
               resolve();
             } else {
-              reject(
-                new Error("The advertisement function is unavailable.")
-              );
+              reject(new Error("Zone function was not found."));
             }
           };
 
           script.onerror = () => {
-            if (settled) return;
-
-            settled = true;
             clearTimeout(timeout);
             reject(new Error("Unable to load the Monetag SDK."));
           };
 
           document.head.appendChild(script);
+        }).catch(error => {
+          sdkPromise = null;
+          throw error;
         });
 
-        return sdkLoadPromise;
+        return sdkPromise;
       }
 
-      function openRedirectAndCloseMiniApp() {
+      function openRedirect() {
         const telegram = window.Telegram?.WebApp;
 
-        showStatus("Opening the next page...");
-
-        if (
-          telegram &&
-          typeof telegram.openLink === "function"
-        ) {
+        if (telegram && typeof telegram.openLink === "function") {
           try {
-            // Ask Telegram to open the destination externally.
             telegram.openLink(REDIRECT_URL);
-
-            // Close the Mini App after requesting the redirect.
-            setTimeout(() => {
-              try {
-                telegram.close();
-              } catch (error) {
-                console.error("Unable to close Mini App:", error);
-              }
-            }, 300);
-
             return;
           } catch (error) {
-            console.error("Telegram redirect failed:", error);
+            console.error("Telegram openLink failed:", error);
           }
         }
 
-        // Browser fallback: navigate to the destination.
-        // A normal browser page cannot use Telegram's close method.
-        window.location.assign(REDIRECT_URL);
+        location.assign(REDIRECT_URL);
       }
 
       async function startAdvertisement() {
-        if (adRequestInProgress) return;
+        if (busy) return;
 
-        adRequestInProgress = true;
+        busy = true;
         retryButton.style.display = "none";
-
-        showStatus("Preparing your advertisement...");
+        showStatus("Preparing advertisement...");
 
         try {
-          await loadMonetagSDK();
+          await loadSDK();
 
           const showAd = window[sdkName];
-
-          if (typeof showAd !== "function") {
-            throw new Error("Advertisement function not found.");
-          }
-
-          showStatus("Please wait while the advertisement is processed...");
-
           const result = showAd();
 
           if (!result || typeof result.then !== "function") {
-            throw new Error(
-              "The SDK did not return the expected promise."
-            );
+            throw new Error("Unexpected response from the ad SDK.");
           }
 
           await result;
 
-          // The SDK promise resolved. Open the redirect and close the Mini App.
-          openRedirectAndCloseMiniApp();
+          // Notify the bot before attempting the redirect.
+          const telegram = window.Telegram?.WebApp;
+
+          if (telegram && typeof telegram.sendData === "function") {
+            const payload = JSON.stringify({
+              event: "monetag_ad_completed",
+              zone_id: zoneId,
+              timestamp: Date.now()
+            });
+
+            // IMPORTANT: sendData may close the Mini App immediately.
+            // The bot must handle Telegram's web_app_data event.
+            telegram.sendData(payload);
+
+            // Do not call close() here: sendData may already close the app.
+            // Redirecting after sendData is not reliable because Telegram
+            // may close the Mini App before the next instruction runs.
+            return;
+          }
+
+          // Non-Telegram fallback: redirect to the destination.
+          openRedirect();
 
         } catch (error) {
           console.error("Monetag error:", error);
@@ -351,13 +295,11 @@
           retryButton.style.display = "block";
 
         } finally {
-          adRequestInProgress = false;
+          busy = false;
         }
       }
 
       retryButton.addEventListener("click", startAdvertisement);
-
-      // Automatically start the zone specified in the URL.
       startAdvertisement();
     })();
   </script>
