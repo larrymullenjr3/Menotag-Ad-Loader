@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="monetag" content="68f716cb1672ff976eb009f4b213f910">
-
   <title>Monetag Ad Loader</title>
-
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
     * {
@@ -17,291 +14,282 @@
     body {
       margin: 0;
       min-height: 100vh;
-      padding: 24px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      background:
-        radial-gradient(circle at top, #202044 0%, transparent 45%),
-        #080811;
-      color: #fff;
-      font-family: Arial, Helvetica, sans-serif;
+      flex-direction: column;
+      font-family: Arial, sans-serif;
+      background: #080b12;
+      color: #ffffff;
     }
 
-    .container {
+    main {
       width: 100%;
-      max-width: 480px;
-      padding: 30px 24px;
-      background: rgba(22, 22, 42, 0.96);
-      border: 1px solid #333354;
-      border-radius: 20px;
+      max-width: 520px;
+      margin: auto;
+      padding: 24px;
       text-align: center;
-      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.35);
     }
 
-    .icon {
-      font-size: 54px;
+    .logo {
+      font-size: 52px;
       margin-bottom: 12px;
     }
 
     h1 {
-      margin: 0 0 12px;
       font-size: 27px;
+      margin: 10px 0;
     }
 
     p {
-      color: #c4c4dc;
-      font-size: 15px;
+      color: #aeb8ca;
       line-height: 1.7;
+      overflow-wrap: anywhere;
     }
 
-    .example {
-      margin: 20px 0;
-      padding: 14px;
-      overflow-wrap: anywhere;
-      background: #0c0c19;
-      border: 1px solid #343454;
-      border-radius: 12px;
-      color: #8bafff;
-      font-size: 14px;
+    .panel {
+      margin-top: 24px;
+      padding: 24px 18px;
+      background: #111827;
+      border: 1px solid #263247;
+      border-radius: 18px;
     }
 
     .status {
-      display: none;
-      margin-top: 20px;
-      padding: 14px;
-      background: #101020;
-      border: 1px solid #343454;
-      border-radius: 12px;
-      font-size: 14px;
-      line-height: 1.6;
-      overflow-wrap: anywhere;
-    }
-
-    .button {
-      width: 100%;
-      margin-top: 14px;
-      padding: 15px 18px;
-      border: 0;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #7367ff, #4c42d8);
-      color: #fff;
       font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
+      color: #d8e2f2;
+      margin-top: 16px;
     }
 
-    #retryButton {
+    .loader {
+      width: 38px;
+      height: 38px;
+      margin: 20px auto;
+      border: 4px solid #29364b;
+      border-top-color: #42a5ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
       display: none;
     }
 
-    .footer {
-      margin-top: 26px;
-      padding-top: 18px;
-      border-top: 1px solid #33334d;
-      color: #9999b8;
-      font-size: 13px;
-      line-height: 1.9;
-    }
-
-    .footer a {
-      color: #9d91ff;
+    .home-button {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      background: #1685ed;
+      color: white;
       text-decoration: none;
       font-weight: bold;
     }
 
-    .footer a:hover {
-      color: #c0b9ff;
-      text-decoration: underline;
+    footer {
+      padding: 18px 12px;
+      text-align: center;
+      color: #8290a5;
+      font-size: 13px;
+    }
+
+    footer a {
+      color: #48a6ff;
+      text-decoration: none;
+      font-weight: bold;
     }
   </style>
 </head>
 
 <body>
-  <main class="container">
-    <div class="icon">📺</div>
+  <main>
+    <div class="logo">⚡</div>
     <h1>Monetag Ad Loader</h1>
+    <p id="intro">
+      A simple Monetag rewarded-ad loader.
+    </p>
 
-    <section id="homePage">
-      <p>Load a Monetag advertisement using its zone ID.</p>
-
-      <div class="example">Example: /12116377</div>
-
-      <p>
-        Add a numeric zone ID to the end of the website URL.
-        The homepage itself does not launch advertisements.
+    <section class="panel">
+      <div id="loader" class="loader hidden"></div>
+      <h2 id="panelTitle">Welcome</h2>
+      <p id="status" class="status">
+        Open a valid zone link from the Telegram bot to begin.
       </p>
+
+      <a id="homeButton" class="home-button" href="/"
+         style="display:none">
+        Return Home
+      </a>
     </section>
-
-    <section id="adPage" hidden>
-      <p id="zoneText"></p>
-      <div id="status" class="status" role="status" aria-live="polite"></div>
-
-      <button id="retryButton" class="button" type="button">
-        Try Advertisement Again
-      </button>
-    </section>
-
-    <footer class="footer">
-      <div>Monetag Ad Loader</div>
-      <div>
-        By
-        <a href="https://t.me/pakcybertechnumber"
-           target="_blank" rel="noopener noreferrer">@PAK CYBER</a>
-      </div>
-    </footer>
   </main>
+
+  <footer>
+    Monetag Ad Loader · By
+    <a href="https://t.me/pakcybertechnumber"
+       target="_blank" rel="noopener noreferrer">@PAK CYBER</a>
+  </footer>
 
   <script>
     (() => {
       "use strict";
 
       const REDIRECT_URL = "https://uplcm.com/4/12116376";
+      const params = new URLSearchParams(window.location.search);
+      const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
 
-      const homePage = document.getElementById("homePage");
-      const adPage = document.getElementById("adPage");
-      const zoneText = document.getElementById("zoneText");
-      const statusBox = document.getElementById("status");
-      const retryButton = document.getElementById("retryButton");
+      const zoneId = path;
+      const userId = params.get("user_id");
+      const webhookUrl = params.get("webhook");
 
-      const match = location.pathname.match(/^\/(\d+)\/?$/);
+      const status = document.getElementById("status");
+      const title = document.getElementById("panelTitle");
+      const intro = document.getElementById("intro");
+      const loader = document.getElementById("loader");
+      const homeButton = document.getElementById("homeButton");
 
-      // Homepage: instructions only.
-      if (!match) return;
-
-      const zoneId = match[1];
-      const sdkName = "show_" + zoneId;
-
-      homePage.hidden = true;
-      adPage.hidden = false;
-      zoneText.textContent = "Loading advertisement for zone " + zoneId;
-
-      let busy = false;
-      let sdkPromise;
-
-      function showStatus(message, color = "#ffffff") {
-        statusBox.style.display = "block";
-        statusBox.style.color = color;
-        statusBox.textContent = message;
+      function showError(message) {
+        loader.classList.add("hidden");
+        title.textContent = "Unable to Start";
+        status.textContent = message;
+        homeButton.style.display = "inline-block";
       }
 
-      function loadSDK() {
-        if (typeof window[sdkName] === "function") {
-          return Promise.resolve();
-        }
-
-        if (sdkPromise) return sdkPromise;
-
-        sdkPromise = new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = "https://libtl.com/sdk.js";
-          script.dataset.zone = zoneId;
-          script.dataset.sdk = sdkName;
-          script.async = true;
-
-          const timeout = setTimeout(() => {
-            reject(new Error("Monetag SDK loading timed out."));
-          }, 20000);
-
-          script.onload = () => {
-            clearTimeout(timeout);
-
-            if (typeof window[sdkName] === "function") {
-              resolve();
-            } else {
-              reject(new Error("Zone function was not found."));
-            }
-          };
-
-          script.onerror = () => {
-            clearTimeout(timeout);
-            reject(new Error("Unable to load the Monetag SDK."));
-          };
-
-          document.head.appendChild(script);
-        }).catch(error => {
-          sdkPromise = null;
-          throw error;
-        });
-
-        return sdkPromise;
-      }
-
-      function openRedirect() {
-        const telegram = window.Telegram?.WebApp;
+      function openRedirectAndClose() {
+        const telegram = window.Telegram && window.Telegram.WebApp;
 
         if (telegram && typeof telegram.openLink === "function") {
           try {
             telegram.openLink(REDIRECT_URL);
+            setTimeout(() => {
+              try {
+                telegram.close();
+              } catch (_) {}
+            }, 700);
             return;
-          } catch (error) {
-            console.error("Telegram openLink failed:", error);
-          }
+          } catch (_) {}
         }
 
-        location.assign(REDIRECT_URL);
+        window.location.assign(REDIRECT_URL);
       }
 
-      async function startAdvertisement() {
-        if (busy) return;
+      async function notifyBot() {
+        const payload = {
+          event: "monetag_ad_completed",
+          user_id: String(userId),
+          zone_id: zoneId,
+          timestamp: Date.now()
+        };
 
-        busy = true;
-        retryButton.style.display = "none";
-        showStatus("Preparing advertisement...");
+        /*
+         * Send a simple text/plain request to avoid a JSON
+         * CORS preflight. TBC reads the body from options.data.
+         * no-cors means the browser cannot confirm the response.
+         */
+        await fetch(webhookUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "text/plain;charset=UTF-8"
+          },
+          body: JSON.stringify(payload)
+        });
+      }
 
-        try {
-          await loadSDK();
+      async function startAd() {
+        if (!/^\d+$/.test(zoneId)) {
+          title.textContent = "Monetag Ad Loader";
+          intro.textContent =
+            "Open this website using a zone link supplied by your bot.";
+          status.textContent =
+            "Example format: /11141895";
+          return;
+        }
 
-          const showAd = window[sdkName];
-          const result = showAd();
-
-          if (!result || typeof result.then !== "function") {
-            throw new Error("Unexpected response from the ad SDK.");
-          }
-
-          await result;
-
-          // Notify the bot before attempting the redirect.
-          const telegram = window.Telegram?.WebApp;
-
-          if (telegram && typeof telegram.sendData === "function") {
-            const payload = JSON.stringify({
-              event: "monetag_ad_completed",
-              zone_id: zoneId,
-              timestamp: Date.now()
-            });
-
-            // IMPORTANT: sendData may close the Mini App immediately.
-            // The bot must handle Telegram's web_app_data event.
-            telegram.sendData(payload);
-
-            // Do not call close() here: sendData may already close the app.
-            // Redirecting after sendData is not reliable because Telegram
-            // may close the Mini App before the next instruction runs.
-            return;
-          }
-
-          // Non-Telegram fallback: redirect to the destination.
-          openRedirect();
-
-        } catch (error) {
-          console.error("Monetag error:", error);
-
-          showStatus(
-            "The advertisement could not be loaded or completed. Please try again.",
-            "#ffcc66"
+        if (!userId || !/^\d+$/.test(userId) || !webhookUrl) {
+          showError(
+            "This link is missing its user or webhook information. " +
+            "Please reopen the loader from the Telegram bot."
           );
-
-          retryButton.style.display = "block";
-
-        } finally {
-          busy = false;
+          return;
         }
+
+        if (!/^https?:\/\//i.test(webhookUrl)) {
+          showError("The webhook link is invalid.");
+          return;
+        }
+
+        title.textContent = "Preparing Your Ad";
+        intro.textContent = "Please wait while the rewarded ad loads.";
+        status.textContent = "Connecting to Monetag…";
+        loader.classList.remove("hidden");
+
+        const sdk = document.createElement("script");
+        sdk.src = "https://libtl.com/sdk.js";
+        sdk.dataset.zone = zoneId;
+        sdk.dataset.sdk = "show_" + zoneId;
+        sdk.async = true;
+
+        sdk.onload = async () => {
+          try {
+            const showAd = window["show_" + zoneId];
+
+            if (typeof showAd !== "function") {
+              throw new Error("Monetag ad function was not found.");
+            }
+
+            title.textContent = "Ad In Progress";
+            status.textContent = "Please complete the ad.";
+
+            // Continue only when Monetag's promise resolves.
+            await showAd();
+
+            title.textContent = "Finishing";
+            status.textContent = "Sending completion information…";
+
+            try {
+              await notifyBot();
+            } catch (error) {
+              console.error("Webhook request failed:", error);
+              status.textContent =
+                "The ad finished, but the notification may not have reached the bot.";
+            }
+
+            status.textContent = "Opening the next page…";
+
+            setTimeout(openRedirectAndClose, 300);
+
+          } catch (error) {
+            console.error("Monetag error:", error);
+            showError(
+              "The ad could not be completed. Please return to the bot and try again."
+            );
+          }
+        };
+
+        sdk.onerror = () => {
+          showError(
+            "The Monetag SDK failed to load. Check your connection and try again."
+          );
+        };
+
+        document.head.appendChild(sdk);
       }
 
-      retryButton.addEventListener("click", startAdvertisement);
-      startAdvertisement();
+      if (path) {
+        startAd();
+      } else {
+        title.textContent = "Ready to Load Ads";
+        intro.textContent =
+          "Open a zone link from your Telegram bot to load its Monetag rewarded ad.";
+        status.textContent =
+          "The homepage does not start an ad by itself.";
+      }
     })();
   </script>
+
+  <!-- Telegram Mini App support -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </body>
   </html>
