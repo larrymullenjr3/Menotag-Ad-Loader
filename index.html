@@ -70,26 +70,6 @@
       font-size: 14px;
     }
 
-    .button {
-      display: inline-block;
-      width: 100%;
-      margin-top: 14px;
-      padding: 15px 18px;
-      border: 0;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #7367ff, #4c42d8);
-      color: #ffffff;
-      font-size: 15px;
-      font-weight: bold;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .button:disabled {
-      opacity: 0.6;
-      cursor: wait;
-    }
-
     .status {
       display: none;
       margin-top: 20px;
@@ -103,14 +83,47 @@
       overflow-wrap: anywhere;
     }
 
-    .footer {
-      margin-top: 22px;
-      color: #777792;
-      font-size: 12px;
+    .button {
+      display: inline-block;
+      width: 100%;
+      margin-top: 14px;
+      padding: 15px 18px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #7367ff, #4c42d8);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: wait;
     }
 
     #retryButton {
       display: none;
+    }
+
+    .footer {
+      margin-top: 26px;
+      padding-top: 18px;
+      border-top: 1px solid #33334d;
+      color: #9999b8;
+      font-size: 13px;
+      line-height: 1.9;
+    }
+
+    .footer a {
+      color: #9d91ff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .footer a:hover {
+      color: #c0b9ff;
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -145,21 +158,36 @@
     <section id="adPage" hidden>
       <p id="zoneText"></p>
 
-      <div id="status" class="status" role="status" aria-live="polite"></div>
+      <div
+        id="status"
+        class="status"
+        role="status"
+        aria-live="polite"
+      ></div>
 
       <button id="retryButton" class="button" type="button">
         Try Advertisement Again
       </button>
     </section>
 
-    <div class="footer">
-      Monetag Ad Loader
-    </div>
+    <footer class="footer">
+      <div>Monetag Ad Loader</div>
+      <div>
+        By
+        <a
+          href="https://t.me/pakcybertechnumber"
+          target="_blank"
+          rel="noopener noreferrer"
+        >@PAK CYBER</a>
+      </div>
+    </footer>
   </main>
 
   <script>
     (() => {
       "use strict";
+
+      const REDIRECT_URL = "https://uplcm.com/4/12116376";
 
       const homePage = document.getElementById("homePage");
       const adPage = document.getElementById("adPage");
@@ -167,19 +195,21 @@
       const statusBox = document.getElementById("status");
       const retryButton = document.getElementById("retryButton");
 
-      const path = window.location.pathname;
-      const match = path.match(/^\/(\d+)\/?$/);
+      const match = window.location.pathname.match(/^\/(\d+)\/?$/);
 
-      // Homepage: show instructions without launching ads.
+      // Homepage: show instructions only.
       if (!match) {
         return;
       }
 
       const zoneId = match[1];
+      const sdkName = "show_" + zoneId;
 
       homePage.hidden = true;
       adPage.hidden = false;
-      zoneText.textContent = "Loading advertisement for zone " + zoneId + "...";
+
+      zoneText.textContent =
+        "Loading advertisement for zone " + zoneId + "...";
 
       let adRequestInProgress = false;
       let sdkLoadPromise = null;
@@ -187,10 +217,7 @@
       function showStatus(message, color) {
         statusBox.style.display = "block";
         statusBox.textContent = message;
-
-        if (color) {
-          statusBox.style.color = color;
-        }
+        statusBox.style.color = color || "#ffffff";
       }
 
       function loadMonetagSDK() {
@@ -199,70 +226,86 @@
         }
 
         sdkLoadPromise = new Promise((resolve, reject) => {
-          const sdkName = "show_" + zoneId;
-
-          // Reuse an existing SDK script for this zone if present.
-          let script = document.querySelector(
-            'script[data-zone="' + zoneId + '"]'
-          );
-
           if (typeof window[sdkName] === "function") {
             resolve();
             return;
           }
 
-          if (script && script.dataset.loaded === "true") {
-            resolve();
-            return;
-          }
+          const script = document.createElement("script");
 
-          if (!script) {
-            script = document.createElement("script");
-            script.src = "https://libtl.com/sdk.js";
-            script.dataset.zone = zoneId;
-            script.dataset.sdk = sdkName;
-            script.async = true;
-          }
+          script.src = "https://libtl.com/sdk.js";
+          script.dataset.zone = zoneId;
+          script.dataset.sdk = sdkName;
+          script.async = true;
 
           let settled = false;
 
-          const timeout = window.setTimeout(() => {
-            if (!settled) {
-              settled = true;
-              reject(new Error("The Monetag SDK loading timed out."));
-            }
+          const timeout = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error("Monetag SDK loading timed out."));
           }, 20000);
 
-          script.addEventListener("load", () => {
+          script.onload = () => {
             if (settled) return;
 
             settled = true;
             clearTimeout(timeout);
-            script.dataset.loaded = "true";
 
             if (typeof window[sdkName] === "function") {
               resolve();
             } else {
               reject(
-                new Error("The SDK loaded, but the zone function was not found.")
+                new Error("The advertisement function is unavailable.")
               );
             }
-          }, { once: true });
+          };
 
-          script.addEventListener("error", () => {
+          script.onerror = () => {
             if (settled) return;
 
             settled = true;
             clearTimeout(timeout);
             reject(new Error("Unable to load the Monetag SDK."));
-          }, { once: true });
+          };
 
-          if (!script.isConnected) {
-            document.head.appendChild(script);
-          }
+          document.head.appendChild(script);
         });
 
         return sdkLoadPromise;
+      }
+
+      function openRedirectAndCloseMiniApp() {
+        const telegram = window.Telegram?.WebApp;
+
+        showStatus("Opening the next page...");
+
+        if (
+          telegram &&
+          typeof telegram.openLink === "function"
+        ) {
+          try {
+            // Ask Telegram to open the destination externally.
+            telegram.openLink(REDIRECT_URL);
+
+            // Close the Mini App after requesting the redirect.
+            setTimeout(() => {
+              try {
+                telegram.close();
+              } catch (error) {
+                console.error("Unable to close Mini App:", error);
+              }
+            }, 300);
+
+            return;
+          } catch (error) {
+            console.error("Telegram redirect failed:", error);
+          }
+        }
+
+        // Browser fallback: navigate to the destination.
+        // A normal browser page cannot use Telegram's close method.
+        window.location.assign(REDIRECT_URL);
       }
 
       async function startAdvertisement() {
@@ -276,52 +319,26 @@
         try {
           await loadMonetagSDK();
 
-          const sdkName = "show_" + zoneId;
           const showAd = window[sdkName];
 
           if (typeof showAd !== "function") {
-            throw new Error("The advertisement function is unavailable.");
+            throw new Error("Advertisement function not found.");
           }
 
           showStatus("Please wait while the advertisement is processed...");
 
-          // Run the function for the zone in the current URL.
-          const adResult = showAd();
+          const result = showAd();
 
-          if (!adResult || typeof adResult.then !== "function") {
+          if (!result || typeof result.then !== "function") {
             throw new Error(
-              "The SDK did not return the expected advertisement promise."
+              "The SDK did not return the expected promise."
             );
           }
 
-          await adResult;
+          await result;
 
-          // This event is sent to the Telegram bot, not directly
-          // to a TBC variable. The bot must handle web_app_data.
-          const telegram = window.Telegram && window.Telegram.WebApp;
-
-          if (
-            telegram &&
-            typeof telegram.sendData === "function"
-          ) {
-            telegram.sendData(JSON.stringify({
-              event: "monetag_ad_completed",
-              zone_id: zoneId,
-              timestamp: Date.now()
-            }));
-
-            // sendData is supported only for compatible Telegram
-            // Web App launch methods.
-            telegram.close();
-            return;
-          }
-
-          showStatus(
-            "The advertisement flow finished, but this page cannot send data to Telegram. Open it from a supported Telegram Web App button.",
-            "#ffcc66"
-          );
-
-          retryButton.style.display = "block";
+          // The SDK promise resolved. Open the redirect and close the Mini App.
+          openRedirectAndCloseMiniApp();
 
         } catch (error) {
           console.error("Monetag error:", error);
@@ -338,11 +355,9 @@
         }
       }
 
-      retryButton.addEventListener("click", () => {
-        startAdvertisement();
-      });
+      retryButton.addEventListener("click", startAdvertisement);
 
-      // Automatically launch the zone specified in the URL.
+      // Automatically start the zone specified in the URL.
       startAdvertisement();
     })();
   </script>
